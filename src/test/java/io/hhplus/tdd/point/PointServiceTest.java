@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,14 +59,17 @@ public class PointServiceTest {
     }
 
     /*포인트 사용*/
-    @Test
-    @DisplayName("1000point가 있을때 200point를 사용하면 800point  남는다.")
-    void use_1000point가_있을때_200point를_사용하면_800point_남는다(){
+    @ParameterizedTest(name = "{0}원 충전 후 {1}원 사용하면 {2}원 남는다")
+    @CsvSource({
+            "1000, 200, 800",
+            "5000, 1000, 4000",
+            "10000, 3000, 7000"
+    })
+    @DisplayName("포인트 사용 후 잔액이 정확히 계산된다")
+    void use_정상사용_잔액계산(long chargeAmount, long useAmount, long expectedLeft) {
+
         //Given
         long userId = 1L;
-        long chargeAmount = 1000;
-        long useAmount = 200;
-        long leftAmount = 800;
 
         //When
         UserPoint result = pointService.charge(userId, chargeAmount);
@@ -74,52 +78,55 @@ public class PointServiceTest {
         //Then
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(userId);
-        assertThat(result.point()).isEqualTo(leftAmount);
+        assertThat(result.point()).isEqualTo(expectedLeft);
 
     }
 
-    @Test
-    @DisplayName("사용자 ID가 0 이하일 때 예외 발생")
-    void use_잘못된사용자ID_예외발생() {
-        // userId = 0, -1 일 때
-        // Given
-        long userId = 0L;
+    @ParameterizedTest
+    @ValueSource(longs = {0L, -1000L, -5000L})
+    @DisplayName("사용 금액이 0 이하일 때 예외 발생")
+    void use_사용금액이_0이하일때_예외발생(long invalidAmount) {
+        // 0원, -100원 사용 시도
+        //Given
+        long userId = 1L;
+        pointService.charge(userId, 500L);
 
         // When & Then
-        assertThatThrownBy(() -> pointService.use(userId, 500L))
+        assertThatThrownBy(() -> pointService.use(userId, invalidAmount))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("양수");
     }
 
-    @Test
-    @DisplayName("사용 금액이 0 이하일 때 예외 발생")
-    void use_사용금액이_0이하일때_예외발생() {
-        // 0원, -100원 사용 시도
-        //Given
+    @ParameterizedTest(name = "잔액 {0}원보다 많은 금액 ({1}원) 사용하면 예외가 발생한다. ")
+    @CsvSource({
+            "50, 200",
+            "500, 1000",
+            "10, 3000"
+    })
+    @DisplayName("잔액보다 많은 금액 사용 시 예외 발생")
+    void use_잔액부족_예외발생(long chargeAmount, long useAmount) {
+        // 500원 있는데 1000원 사용 시도
+        // Given
         long userId = 1L;
-        long useAmount = 0;
-        pointService.charge(userId, 500L);
+        pointService.charge(userId, chargeAmount);
 
         // When & Then
         assertThatThrownBy(() -> pointService.use(userId, useAmount))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("양수");
-    }
-
-    @Test
-    @DisplayName("잔액보다 많은 금액 사용 시 예외 발생")
-    void use_잔액부족_예외발생() {
-        // 500원 있는데 1000원 사용 시도
-        // Given
-        long userId = 1L;
-        pointService.charge(userId, 500L);
-
-        // When & Then
-        assertThatThrownBy(() -> pointService.use(userId, 1000L))
-                .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("잔액");
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0L, -1L, -100L})
+    @DisplayName("사용자 ID가 0 이하일 때 예외 발생")
+    void use_잘못된사용자ID_예외발생(long invalidUserId) {
+        // Given
+        //long userId = 0L;
 
+        // When & Then
+        assertThatThrownBy(() -> pointService.use(invalidUserId, 500L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("양수");
+    }
 
 }
