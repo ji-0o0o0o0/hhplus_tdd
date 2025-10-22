@@ -37,6 +37,18 @@ public class PointService {
         }
     }
 
+    /**
+     * 포인트 사용여부 검증
+     * @param currentPoint 현재 금액
+     * @param useAmount 사용량
+     * * @throws IllegalArgumentException  "사용 금액 > 잔액"일 때 경우
+     */
+    private void validateBalance(long currentPoint, long useAmount) {
+        if (currentPoint < useAmount) {
+            throw new IllegalArgumentException("사용 금액이 잔액보다 큽니다.");
+        }
+    }
+
     // === 비즈니스 로직 ===
 
     public UserPoint getUserPoint(long id) {
@@ -70,6 +82,21 @@ public class PointService {
 
     public UserPoint use(long id, long amount) {
         validateUserId(id);
-        return null;
+        validateAmount(amount);
+
+        // 1. 현재 포인트 조회
+        long currentPoint = userPointTable.selectById(id).point();
+        //사용여부 확인
+        validateBalance(currentPoint,amount);
+
+        //2. 포인트 차감
+        long newAmount = currentPoint- amount;
+        UserPoint updatePoint = userPointTable.insertOrUpdate(id, newAmount);
+
+        //3. 이력저장
+        pointHistoryTable.insert(id, amount, TransactionType.USE, updatePoint.updateMillis());
+
+        return updatePoint;
     }
+
 }
