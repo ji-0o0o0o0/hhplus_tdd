@@ -58,6 +58,17 @@ public class PointServiceTest {
                 .hasMessageContaining("금액");
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {0L, -1L, -100L})
+    @DisplayName("사용자 ID가 0 이하일 때 예외 발생")
+    void charge_잘못된사용자ID_예외발생(long invalidUserId) {
+        // When & Then
+        assertThatThrownBy(() -> pointService.charge(invalidUserId, 500L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("양수");
+    }
+
+
     /*포인트 사용*/
     @ParameterizedTest(name = "{0}원 충전 후 {1}원 사용하면 {2}원 남는다")
     @CsvSource({
