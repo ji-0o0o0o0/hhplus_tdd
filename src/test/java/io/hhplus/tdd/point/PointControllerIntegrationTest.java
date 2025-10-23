@@ -179,6 +179,39 @@ public class PointControllerIntegrationTest {
                 .andExpect(jsonPath("$.point").value(chargeAmount));
 
     }
+    /*포인트 조회*/
+    /* 메서드명: getPointHistory_충전사용후조회_성공()
+     - 내용: 충전 및 사용 후 Get /point/{id}/histories 호출해서 히스토리 조회
+     - 검증: 응답 상태 200, 배열 형태, 2개 이력, CHARGE와 USE 타입 확인
+    * */
+    @Test
+    @DisplayName("포인트 충전과 사용 후 히스토리 조회 시 전체 이력이 반환된다")
+    void getPointHistory_충전사용후조회_성공() throws Exception{
+        //Given
+        long userId = 7L;
+        long chargeAmount = 70000L;
+        long useAmount = 6200L;
+
+        //충전
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(chargeAmount)));
+
+        //사용
+        mockMvc.perform(patch("/point/{id}/use",userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(useAmount)));
+
+        //When&Then
+        mockMvc.perform(get("/point/{id}/histories",userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())//배열인지 확인
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].type").value("CHARGE"))  // 첫 번째가 CHARGE
+                .andExpect(jsonPath("$[1].type").value("USE"));    // 두 번째가 USE
+
+
+    }
 
 
 }
