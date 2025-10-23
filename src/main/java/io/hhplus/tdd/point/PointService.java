@@ -59,7 +59,8 @@ public class PointService {
 
     public List<PointHistory> getPointHistory(long id) {
         validateUserId(id);
-        return List.of();
+
+        return pointHistoryTable.selectAllByUserId(id);
     }
 
     public UserPoint charge(long id, long amount) {

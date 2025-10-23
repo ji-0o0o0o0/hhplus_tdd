@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -188,4 +190,66 @@ public class PointServiceTest {
                 .hasMessageContaining("양수");
     }
 
+    //포인트 내역 조회
+    /*성공*/
+    @Test
+    @DisplayName("히스토리 없는 신규 사용자 히스토리 조회")
+    void getPointHistory_히스토리_없는_신규_사용자_히스토리_조회(){
+        //Given
+        long userId = 1L;
+
+        //When
+        List<PointHistory> result = pointService.getPointHistory(userId);
+
+        //Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+    }
+    @Test
+    @DisplayName("포인트 충전 후 히스토리 조회")
+    void getPointHistory_포인트_충전_후_히스토리_조회(){
+        //Given
+        long userId = 1L;
+        long chargeAmount = 500L;
+        pointService.charge(userId, chargeAmount);
+
+        //When
+        List<PointHistory> result = pointService.getPointHistory(userId);
+        //Then
+        assertThat(result).isNotNull();
+        assertThat(result.size()).isEqualTo(1);
+        assertThat(result.get(0).userId()).isEqualTo(userId);
+        assertThat(result.get(0).type()).isEqualTo(TransactionType.CHARGE);
+    }
+
+    @Test
+    @DisplayName("포인트 사용 후 히스토리 조회")
+    void getPointHistory_포인트_사용_후_히스토리_조회(){
+        //Given
+        long userId = 1L;
+        long chargeAmount = 500L;
+        long useAmount = 100L;
+        pointService.charge(userId, chargeAmount);
+        pointService.use(userId, useAmount);
+
+        //When
+        List<PointHistory> result = pointService.getPointHistory(userId);
+        //Then
+        assertThat(result).isNotNull();
+        assertThat(result.size()).isEqualTo(2);
+        assertThat(result.get(0).userId()).isEqualTo(userId);
+        assertThat(result.get(0).type()).isEqualTo(TransactionType.CHARGE);
+        assertThat(result.get(1).type()).isEqualTo(TransactionType.USE);
+    }
+
+    /*예외*/
+    @ParameterizedTest
+    @ValueSource(longs = {0L, -1L, -100L})
+    @DisplayName("사용자 ID가 0 이하일 때 예외 발생")
+    void getPointHistory_잘못된사용자ID_예외발생(long invalidUserId) {
+        // When & Then
+        assertThatThrownBy(() -> pointService.getPointHistory(invalidUserId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("양수");
+    }
 }
