@@ -62,6 +62,99 @@ public class PointControllerIntegrationTest {
                 .andExpect(status().is5xxServerError()) ;// 응답 상태 200인지 확인
     }
 
+    /*포인트 사용*/
+    /* 메서드명: usePoint_성공()
+     - 내용: PATCH /point/{id}/use 호출해서 5000원 충전 후 3000원 사용 성공
+     - 검증: 응답 상태 200, id 일치, point가 2000인지 확인
+    * */
+    @Test
+    @DisplayName("포인트 충전 후 포인트 사용API 호출 시 정상적으로 사용된다.")
+    void usePoint_성공()throws Exception{
+        //Given
+        long userId = 2L; //충돌 방지
+        long chargeAmount = 5000L;
+        long useAmount = 3000L;
+
+        //충전
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(chargeAmount)));
+
+        //When&Then
+        mockMvc.perform(patch("/point/{id}/use",userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.valueOf(useAmount)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.point").value(chargeAmount-useAmount));
+
+    }
+    /* 메서드명: usePoint_잔액부족_실패()
+     - 내용: PATCH /point/{id}/use 호출해서 충전 안하고 1000원 사용
+     - 검증: 응답 상태 500 에러
+    * */
+    @Test
+    @DisplayName("잔액 부족 시 예외 발생")
+    void usePoint_잔액부족_실패()throws Exception{
+        //Given
+        long userId = 3L; //충돌 방지
+        long useAmount = 3000L;
+
+        //When&Then
+        mockMvc.perform(patch("/point/{id}/use",userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.valueOf(useAmount)))
+                .andExpect(status().is5xxServerError());
+    }
+    /* 메서드명: usePoint_최소사용금액미달_실패()
+     - 내용: PATCH /point/{id}/use 호출해서 5000원 충전 후 50원 사용(최소 사용금액 100원)
+     - 검증: 응답 상태 500 에러
+    * */
+    @Test
+    @DisplayName("최소 사용 금액 미달 시 예외 발생")
+    void usePoint_최소사용금액미달_실패()throws Exception{
+        //Given
+        long userId = 4L; //충돌 방지
+        long chargeAmount = 5000L;
+        long useAmount = 50L;
+
+        //충전
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(chargeAmount)));
+
+        //When&Then
+        mockMvc.perform(patch("/point/{id}/use",userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.valueOf(useAmount)))
+                .andExpect(status().is5xxServerError());
+
+    }
+    /* 메서드명: usePoint_10원단위위반_실패()
+     - 내용: PATCH /point/{id}/use 호출해서 5000원 충전 후 4536원 사용(10원 단위로만 사용 가능)
+     - 검증: 응답 상태 500 에러
+    * */
+    @Test
+    @DisplayName("10원 단위 위반 시 예외 발생")
+    void usePoint_10원단위위반_실패()throws Exception{
+        //Given
+        long userId = 5L; //충돌 방지
+        long chargeAmount = 5000L;
+        long useAmount = 4536L;
+
+        //충전
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(chargeAmount)));
+
+        //When&Then
+        mockMvc.perform(patch("/point/{id}/use",userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.valueOf(useAmount)))
+                .andExpect(status().is5xxServerError());
+
+    }
+
 
 }
 
