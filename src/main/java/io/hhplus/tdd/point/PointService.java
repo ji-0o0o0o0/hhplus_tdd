@@ -49,6 +49,42 @@ public class PointService {
         }
     }
 
+    /**
+     * 충전 한도 검증
+     * @param amount 충전 금액
+     * @throws IllegalArgumentException 충전 금액이 100만원 초과인 경우
+     */
+    private void validateChargeLimit(long amount) {
+        final long MAX_CHARGE_AMOUNT = 1_000_000L;
+        if (amount > MAX_CHARGE_AMOUNT) {
+            throw new IllegalArgumentException("1회 충전 금액은 100만원을 초과할 수 없습니다.");
+        }
+    }
+
+    /**
+     * 최소 사용 금액 검증
+     * @param amount 사용 금액
+     * @throws IllegalArgumentException 사용 금액이 100원 미만인 경우
+     */
+    private void validateMinUseAmount(long amount) {
+        final long MIN_USE_AMOUNT = 100L;
+        if (amount < MIN_USE_AMOUNT) {
+            throw new IllegalArgumentException("포인트는 최소 100원 이상부터 사용 가능합니다.");
+        }
+    }
+
+    /**
+     * 사용 금액 단위 검증
+     * @param amount 사용 금액
+     * @throws IllegalArgumentException 사용 금액이 10원 단위가 아닌 경우
+     */
+    private void validateUseUnit(long amount) {
+        final long USE_UNIT = 10L;
+        if (amount % USE_UNIT != 0) {
+            throw new IllegalArgumentException("포인트는 10원 단위로만 사용 가능합니다.");
+        }
+    }
+
     // === 비즈니스 로직 ===
 
     public UserPoint getUserPoint(long id) {
@@ -66,6 +102,7 @@ public class PointService {
     public UserPoint charge(long id, long amount) {
         validateUserId(id);
         validateAmount(amount);
+        validateChargeLimit(amount);
 
         // 1. 현재 포인트 조회
         UserPoint currentPoint = userPointTable.selectById(id);
@@ -85,6 +122,8 @@ public class PointService {
     public UserPoint use(long id, long amount) {
         validateUserId(id);
         validateAmount(amount);
+        validateMinUseAmount(amount);
+        validateUseUnit(amount);
 
         // 1. 현재 포인트 조회
         long currentPoint = userPointTable.selectById(id).point();

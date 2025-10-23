@@ -72,6 +72,19 @@ public class PointServiceTest {
                 .hasMessageContaining("양수");
     }
 
+    @ParameterizedTest(name = "충전 금액이 {0}원일 때 최대 한도 초과 예외가 발생한다")
+    @ValueSource(longs = {1_000_001L, 2_000_000L, 10_000_000L})
+    @DisplayName("충전 금액이 100만원 초과일 때 예외가 발생한다")
+    void charge_충전금액이_최대한도_초과일때_예외발생(long overLimitAmount) {
+        // Given
+        long userId = 1L;
+
+        // When & Then
+        assertThatThrownBy(() -> pointService.charge(userId, overLimitAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("100만원");
+    }
+
 
     /*포인트 사용*/
     /*성공*/
@@ -144,6 +157,34 @@ public class PointServiceTest {
         assertThatThrownBy(() -> pointService.use(invalidUserId, 500L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("양수");
+    }
+
+    @ParameterizedTest(name = "사용 금액이 {0}원일 때 최소 사용 금액 미달 예외가 발생한다")
+    @ValueSource(longs = {1L, 50L, 99L})
+    @DisplayName("사용 금액이 100원 미만일 때 예외가 발생한다")
+    void use_사용금액이_최소금액_미달일때_예외발생(long underMinAmount) {
+        // Given
+        long userId = 1L;
+        pointService.charge(userId, 10000L);
+
+        // When & Then
+        assertThatThrownBy(() -> pointService.use(userId, underMinAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("100원");
+    }
+
+    @ParameterizedTest(name = "사용 금액이 {0}원일 때 10원 단위가 아니므로 예외가 발생한다")
+    @ValueSource(longs = {105L, 1234L, 5678L})
+    @DisplayName("사용 금액이 10원 단위가 아닐 때 예외가 발생한다")
+    void use_사용금액이_10원단위가_아닐때_예외발생(long invalidUnitAmount) {
+        // Given
+        long userId = 1L;
+        pointService.charge(userId, 10000L);
+
+        // When & Then
+        assertThatThrownBy(() -> pointService.use(userId, invalidUnitAmount))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("10원 단위");
     }
 
     /*포인트 조회*/
