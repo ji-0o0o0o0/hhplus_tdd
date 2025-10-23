@@ -99,7 +99,8 @@ public class PointService {
         return pointHistoryTable.selectAllByUserId(id);
     }
 
-    public UserPoint charge(long id, long amount) {
+
+    public synchronized UserPoint charge(long id, long amount) {// synchronized 추가하여 한 번에 한 스레드만 실행 가능하도록 변경
         validateUserId(id);
         validateAmount(amount);
         validateChargeLimit(amount);
@@ -119,7 +120,7 @@ public class PointService {
         return updatedPoint;
     }
 
-    public UserPoint use(long id, long amount) {
+    public synchronized UserPoint use(long id, long amount) {
         validateUserId(id);
         validateAmount(amount);
         validateMinUseAmount(amount);
