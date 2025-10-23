@@ -155,6 +155,31 @@ public class PointControllerIntegrationTest {
 
     }
 
+    /*포인트 조회*/
+    /* 메서드명: getUserPoint_충전후조회_성공()
+     - 내용: Get /point/{id} 호출해서 20000원 충전 후 조회
+     - 검증: 응답 상태 200, id 일치, point가 20000원인지 확인
+    * */
+    @Test
+    @DisplayName("포인트 충전 후 조회 시 정확한 잔액이 반환된다")
+    void getUserPoint_충전후조회_성공()throws Exception{
+        //Given
+        long userId = 6L; //충돌 방지
+        long chargeAmount = 20000L;
+
+        //충전
+        mockMvc.perform(patch("/point/{id}/charge", userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(String.valueOf(chargeAmount)));
+
+        //When&Then
+        mockMvc.perform(get("/point/{id}",userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(userId))
+                .andExpect(jsonPath("$.point").value(chargeAmount));
+
+    }
+
 
 }
 
