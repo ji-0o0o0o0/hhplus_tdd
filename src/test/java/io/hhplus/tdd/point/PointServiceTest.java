@@ -29,6 +29,7 @@ public class PointServiceTest {
     }
 
     /*포인트 충전*/
+    /*성공*/
     @ParameterizedTest(name = "{0}원을 충전하면 포인트가 {0}원이 된다")
     @ValueSource(longs = {1000L, 2000L, 5000L})
     @DisplayName("포인트를 충전하면 금액이 정상적으로 증가한다")
@@ -45,6 +46,7 @@ public class PointServiceTest {
         assertThat(result.point()).isEqualTo(chargeAmount);
     }
 
+    /*예외*/
     @ParameterizedTest(name = "충전 금액이 {0}원일 때 예외가 발생한다")
     @ValueSource(longs = {0L, -1000L, -5000L})
     @DisplayName("충전 금액이 0 이하일 때 예외가 발생한다")
@@ -70,6 +72,7 @@ public class PointServiceTest {
 
 
     /*포인트 사용*/
+    /*성공*/
     @ParameterizedTest(name = "{0}원 충전 후 {1}원 사용하면 {2}원 남는다")
     @CsvSource({
             "1000, 200, 800",
@@ -93,6 +96,7 @@ public class PointServiceTest {
 
     }
 
+    /*예외*/
     @ParameterizedTest
     @ValueSource(longs = {0L, -1000L, -5000L})
     @DisplayName("사용 금액이 0 이하일 때 예외 발생")
@@ -136,6 +140,50 @@ public class PointServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> pointService.use(invalidUserId, 500L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("양수");
+    }
+
+    /*포인트 조회*/
+    /*성공*/
+    @Test
+    @DisplayName("포인트를 충전한 후 조회하면 정확한 금액이 반환된다")
+    void getUserPoint_포인트_조회(){
+        //Given
+        long userId = 1L;
+        long chargeAmount = 500L;
+        pointService.charge(userId, chargeAmount);
+
+        //When
+        UserPoint result = pointService.getUserPoint(userId);
+
+        //Then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(userId);
+        assertThat(result.point()).isEqualTo(chargeAmount);
+    }
+    @Test
+    @DisplayName("포인트를 충전하지 않은 사용자를 조회하면 0원이 반환된다")
+    void getUserPoint_신규사용자_0원반환(){
+        //Given
+        long userId = 999L;
+
+        //When
+        UserPoint result = pointService.getUserPoint(userId);
+
+        //Then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(userId);
+        assertThat(result.point()).isEqualTo(0L);
+    }
+
+    /*예외*/
+    @ParameterizedTest
+    @ValueSource(longs = {0L, -1L, -100L})
+    @DisplayName("사용자 ID가 0 이하일 때 예외 발생")
+    void getUserPoint_잘못된사용자ID_예외발생(long invalidUserId) {
+        // When & Then
+        assertThatThrownBy(() -> pointService.getUserPoint(invalidUserId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("양수");
     }

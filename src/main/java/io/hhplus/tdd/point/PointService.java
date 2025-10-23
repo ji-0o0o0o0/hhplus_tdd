@@ -53,7 +53,8 @@ public class PointService {
 
     public UserPoint getUserPoint(long id) {
         validateUserId(id);
-        return null;
+
+        return userPointTable.selectById(id);
     }
 
     public List<PointHistory> getPointHistory(long id) {
